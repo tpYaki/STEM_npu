@@ -92,6 +92,7 @@ class SOmodel(BaseModel):
         super(SOmodel, self).__init__(opt)
         self.netE = FeatureNet(opt.n_genes,dp=opt.dp)
         self.optimizer = torch.optim.AdamW(self.netE.parameters(), lr=opt.lr)
+        self.netE, self.optimizer = amp.initialize(self.netE, self.optimizer,  opt_level='O2', loss_scale=32.0, combine_grad=True)
         self.lr_scheduler = lr_scheduler.StepLR(optimizer=self.optimizer,step_size=200, gamma=0.5)
         self.loss_names = ['E','E_pred','E_circle','E_mmd']
         self.mmd_fn = MMDLoss()
@@ -132,7 +133,10 @@ class SOmodel(BaseModel):
         self.loss_E_mmd = self.mmd_fn(self.e_seq_st,self.e_seq_sc[ranidx])
         
         self.loss_E = self.loss_E_pred + self.alpha*self.loss_E_mmd + ratio*self.loss_E_circle
-        self.loss_E.backward()
+        #self.loss_E.backward()
+        with amp.scale_loss(self.loss_E, self.optimizer) as scaled_loss:     
+            scaled_loss.backward() 
+
         self.optimizer.step()
         
     def togpu(self):
