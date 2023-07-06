@@ -8,6 +8,12 @@ import numpy as np
 import time
 from .utils import *
 import scipy
+import torch_npu
+from torch_npu.contrib import transfer_to_npu 
+
+
+import apex
+from apex import amp
 
 class STData(Dataset):
     def __init__(self,data,coord):
